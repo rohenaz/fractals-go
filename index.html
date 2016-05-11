@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Concurrent Fractal Generator</title>
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <link href="bower_components/lightbox2/dist/css/lightbox.css" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="style.css"/>
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro' rel='stylesheet' type='text/css'>
+
+    <script type="text/javascript">
+
+        $('document').ready(function() {
+            /* Initialize seedBank */
+            if (localStorage && localStorage.getItem('seeds')) {
+                renderSeedbank();
+            } else {
+                var seedBank = {seeds: []};
+                localStorage.setItem('seeds', JSON.stringify(seedBank));
+                $('<li>').text('No Seeds yet... pick one!').appendTo($("#seedBank"));
+            }
+
+            // Start WebSocket Connection
+            if (window["WebSocket"]) {
+                ws = new WebSocket("ws://localhost:1339/ws");
+
+                /* Handle Connect */
+                ws.onopen = function(evt) {
+                    appendLog($("<div><b>Connection opened.</b></div>"));
+                }
+
+                /* Handle Disconnect */
+                ws.onclose = function(evt) {
+                    appendLog($("<div><b>Connection closed.</b></div>"));
+                }
+
+                /* Incoming websocket message */
+                ws.onmessage = function(evt) {
+                    appendLog($("<div/>").text(evt.data));
+
+                    var msg = JSON.parse(evt.data);
+                    var pct=0;
+                    var processNo=0;
+
+                    if(msg.Name.indexOf("pct") > -2) {                                                                  // Check if message name contains "pct"
+                        if (msg.Name == "pct1") {
+                            processNo = 1;
+                            pct = msg.Body;
+                        }
+                        if (msg.Name == "pct2") {
+                            processNo = 2;
+                            pct = msg.Body;
+                        }
+                        if (msg.Name == "pct3") {
+                            processNo = 3;
+                            pct = msg.Body;
+                        }
+                        if (msg.Name == "pct4") {
+                            processNo = 4;
+                            pct = msg.Body;
+                        }
+
+                        console.log("Process " + msg.Name + ": " + pct);
+                        $("#f" + parseInt(processNo) + " .pct").html(pct);                                                  // Update percentage
+                        if (pct == 100) {                                                                                   // If done, replace pct with generated image
+                            var seed = $('#seed').val();
+                            var imgPath = "img/" + parseInt(processNo) + "_" + seed + ".png";
+                            var imgHtml = "<a href='" + imgPath + "' data-lightbox='fractals'><img src=" + imgPath + " /></a>";
+                            var f = $("#f" + parseInt(processNo));
+                            f.hide();
+                            f.html(imgHtml);
+                            f.fadeIn();
+                            console.log("Done with process " + processNo);
+                            pct = 0;
+                        }
+                    }
+                }
+
+
+                /* Capture enter Key */
+                $('#seed').keyup(function (event) {
+                    console.log(event.keyCode);
+                    if (event.keyCode == 13) {                                                                          // Ignore enter key unless seed input is in focus
+                        plantSeed($('#seed').val());                                                                    // Go!
+                    }
+                });
+                $('#sendBtn').click(function () {
+                    plantSeed($('#seed').val());
+                });
+                $('#cancelBtn').click(function () {
+                    /* Send Cancel Message to server */
+                    var payload = JSON.stringify({Name: 'cancel', Body: "1", Time: $.now()});                           // Build JSON
+                    ws.send(payload);
+                });
+
+                /* Start generating fractals from seed */
+                function plantSeed(seedValue) {
+                    /* Sanity check */
+                    if (seedValue.length == 6 && $.isNumeric(seedValue)) {                                              // Validate input length & value
+                        console.log("Planting seed... "+ seedValue);
+                        /* Initialize percent counters */
+                        for(x=1;x<5;x++) {
+                            $('#f'+parseInt(x)).html('<span class="pct">0</span>');
+                        }
+
+                        /* Save the seed to localStorage if not exists */
+                        var seedBank = JSON.parse(localStorage.getItem('seeds'));                                       // Load up the seedBank
+                        var dupeSeed=false;
+                        for(var i = 0; i < seedBank.seeds.length; i++) {                                                // See if this seed already exists
+                            if (seedBank.seeds[i].seed == seedValue) {                                                  // if already in the list
+                                loadSeed(seedValue);                                                                    // Load seed from cache instead of generating
+                                dupeSeed=true;
+                                break;                                                                                  // quit
+                            }
+                        }
+                        if(!dupeSeed) {
+                            seedBank.seeds.push({seed: seedValue});                                                     // Add seed to seedBank
+                            localStorage.setItem('seeds', JSON.stringify(seedBank));                                    // Save to local storage
+                            renderSeedbank();                                                                           // Update the seedBank with the new value
+                        }
+
+                        /* Send to seed to go app */
+                        var payload = JSON.stringify({Name: 'plant_seed', Body: seedValue, Time: $.now()});             // Build JSON
+                        ws.send(payload);                                                                               // Send to server via websocket
+                        console.log("Outgoing messages:" + payload);
+                    }
+                    else {
+                        alert("Invalid seed, 6 digit number please");
+                    }
+                }
+            } else {
+                appendLog($("<div><b>Your browser does not support WebSockets.</b></div>"));
+            }
+
+            /* Output messages to the log container */
+            var msg = $("#message_container");
+            var log = $("#log");
+            function appendLog(msg) {
+                var d = log[0];
+                var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+                msg.appendTo(log);
+                if (doScroll) {
+                    d.scrollTop = d.scrollHeight - d.clientHeight;
+                }
+            }
+        });
+
+        function loadSeed(seed) {
+            /* load images */
+            for (x = 1; x < 5; x++) {
+                var imgPath = "img/" + x + "_" + seed + ".png";
+                $("#f" + x).html("<a href='" + imgPath + "' data-lightbox='fractals'><img src=" + imgPath + " /></a>");
+            }
+
+        }
+
+        /* Render SeedBank HTML */
+        function renderSeedbank() {
+            var sb = $("#seedBank");
+            sb.fadeOut();
+            sb.html("");
+            seedBank = JSON.parse(localStorage.getItem('seeds'));
+            for (x = 0; x < seedBank.seeds.length; x++) {
+                var seed = seedBank.seeds[x].seed;
+                $('<li>').html("<a href=javascript:loadSeed(" + seed + ")>" + seed + "</a>").appendTo(sb);
+            }
+            sb.fadeIn();
+        }
+
+    </script>
+</head>
+<body>
+<div id="container">
+    <!-- HEADING -->
+    <h1>Fractal Macchina</h1>
+    <h3>Enter 6 digits</h3>
+    <input id="seed" placeholder="######" type="text" maxlength="6" />
+    <input type="image" id="sendBtn" src="/img/seed.png"/>
+    <br />
+    <!-- SEED BANK -->
+    <div id="seed_container">
+        <h2>Seed Bank</h2>
+        <ul id="seedBank"></ul>
+    </div>
+
+    <!-- LOG -->
+    <div id="log"></div>
+
+    <!-- FRACTALS -->
+    <div id="fractalContainer">
+        <div id="f1"><span class="pct">0</span></div>
+        <div id="f2"><span class="pct">0</span></div>
+        <div id="f3"><span class="pct">0</span></div>
+        <div id="f4"><span class="pct">0</span></div>
+    </div>
+    <br />
+    <div>
+        <input type="Button" id="cancelBtn" value="X" />
+    </div>
+</div>
+<script src="bower_components/lightbox2/dist/js/lightbox.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+body {
+    background-color: #000;
+    color:#4c4c4c;
+    padding:0;
+    margin:0;
+    font-family:'Source Sans Pro', sans-serif;
+}
+#container {
+    min-height:100%;
+    margin: auto;
+    width: 1500px;
+    text-align:center;
+}
+
+input[type="text"]{
+    padding:15px;
+}
+input[type="image"] {
+    margin: 25px 0 -10px 15px;
+}
+
+#fractalContainer {
+    /* margin: auto; */
+    width: 80%;
+    text-align: center;
+    display: block;
+    margin: 0 auto;
+}
+#f1, #f2, #f3, #f4 {
+    float:left;
+    width: 250px;
+    margin:20px;
+    height: 400px;
+    line-height: 1em;
+    background-color: #000;
+    box-shadow: inset 0 0 5px #333;
+    text-align: center;
+    font-size: 50px;
+    border-radius: 3px;
+    padding: 1px;
+}
+
+#f1 img, #f2 img, #f3 img, #f4 img {
+    width: 250px;
+    height: 390px;
+}
+
+.pct {
+    color:aqua;
+    padding-top: 180px;
+    position: relative;
+    display: block;
+}
+
+#log {
+    display:none;
+    color:#4c4c4c;
+    margin: 0;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    position: absolute;
+    top: 0.5em;
+    left: 0.5em;
+    bottom: 3em;
+    overflow: auto;
+    height:100%;
+    width: 250px;
+    font: 10px Tahoma, sans-serif;
+}
+
+
+#seed_container {
+    color:#4c4c4c;
+    margin: 0;
+    padding-top:5px;
+    padding-bottom:25px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    width: 100%;
+    font-size: 10px;
+}
+
+#seed {
+    background-color:#000;
+    color: aqua;
+    padding:10px;
+    width:6em;
+    border: 0;
+    border-bottom:1px solid #29824f;
+    font-size:18px;
+    letter-spacing:.25em;
+    text-align:center;
+}
+#seedBank{
+    list-style:none;
+}
+#seedBank li {
+    padding:5px;
+    display:inline;
+}
+#seedBank a {
+    color:#29824f;
+    text-decoration: none;
+}
+
+/* Glowing Input Fix */
+input[type=text], textarea {
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+}
